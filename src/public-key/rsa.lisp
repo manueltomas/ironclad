@@ -138,17 +138,19 @@
 (defmethod destructure-signature ((kind (eql :rsa)) signature)
   (list :s (octets-to-integer signature) :n-bits (* 8 (length signature))))
 
-(defmethod sign-message ((key rsa-private-key) msg &key (start 0) end pss &allow-other-keys)
+(defmethod sign-message ((key rsa-private-key) msg &key (start 0) end pkcs1 pss &allow-other-keys)
   (let ((nbits (integer-length (rsa-key-modulus key)))
         (m (subseq msg start end)))
-    (when pss
-      (setf m (pss-encode pss m (/ nbits 8))))
+    (cond (pss
+           (setf m (pss-encode pss m (/ nbits 8))))
+          (pkcs1
+           (setf m (pkcs1-encode pkcs1 m (/ nbits 8)))))
     (setf m (octets-to-integer m))
     (make-signature :rsa
                     :s (rsa-core m (rsa-key-exponent key) (rsa-key-modulus key))
                     :n-bits nbits)))
 
-(defmethod verify-signature ((key rsa-public-key) msg signature &key (start 0) end pss &allow-other-keys)
+(defmethod verify-signature ((key rsa-public-key) msg signature &key (start 0) end pkcs1 pss &allow-other-keys)
   (let ((nbits (integer-length (rsa-key-modulus key))))
     (unless (= (* 8 (length signature)) nbits)
       (error 'invalid-signature-length :kind 'rsa))
@@ -157,4 +159,7 @@
            (m (rsa-core s (rsa-key-exponent key) (rsa-key-modulus key))))
       (if pss
           (pss-verify pss (subseq msg start end) (integer-to-octets m :n-bits nbits))
-          (= (octets-to-integer msg :start start :end end) m)))))
+          (progn
+            (when pkcs1
+              (setf msg (pkcs1-encode pkcs1 (subseq msg start end) (/ nbits 8))))
+            (= (octets-to-integer msg :start start :end end) m))))))

@@ -466,6 +466,17 @@
       (error "signature verification failed for ~A on pkey (~A ~A), input ~A, signature ~A"
              name n e input signature))))
 
+(defun rsa-pkcs1-signature-test (name n e d input signature)
+  (let* ((pk (ironclad:make-public-key :rsa :n n :e e))
+         (sk (ironclad:make-private-key :rsa :n n :d d))
+         (s (ironclad:sign-message sk input :pkcs1 t)))
+    (when (mismatch s signature)
+      (error "signature failed for ~A on skey (~A ~A), input ~A, signature ~A"
+             name n d input signature))
+    (unless (ironclad:verify-signature pk input signature :pkcs1 t)
+      (error "signature verification failed for ~A on pkey (~A ~A), input ~A, signature ~A"
+             name n e input signature))))
+
 (defun elgamal-signature-test (name p g x y input k signature)
   (let* ((ironclad::*signature-nonce-for-test* k)
          (pk (ironclad:make-public-key :elgamal :p p :g g :y y))
@@ -664,6 +675,7 @@
 
 (defparameter *public-key-signature-tests*
   (list (cons :rsa-pss-signature-test 'rsa-pss-signature-test)
+        (cons :rsa-pkcs1-signature-test 'rsa-pkcs1-signature-test)
         (cons :elgamal-signature-test 'elgamal-signature-test)
         (cons :dsa-signature-test 'dsa-signature-test)
         (cons :ed25519-signature-test 'ed25519-signature-test)

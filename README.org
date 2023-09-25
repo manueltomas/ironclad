@@ -1203,18 +1203,24 @@ and ~nil~ otherwise.
 *** Padding
 
 To be secure, RSA signature requires the message to be padded.
-The /pss/ key parameter is provided to pad (or unpad) the message
-during signature (or verification) with the PSS scheme of PKCS-1.
-The value of the /pss/ key parameter can be either a digest name
-or ~t~ (which will use the sha1 digest).
+Two parameters are provided to pad (or unpad) the message during 
+signature (or verification): the /pss/ key parameter pads the 
+message with the PSS scheme of PKCS-1 and the /pkcs1/ key parameter
+pads the message with PKCS-1 v1.5 without the PSS scheme.
+The value of the /pss/ and /pkcs1/ key parameters can be either a 
+digest name or ~t~ (which will use the sha1 digest).
+If both are ~t~ or if /pss/ is ~t~ and /pkcs1/ ~nil~, the PSS scheme 
+will be used. If /pkcs1/ is ~t~ and /pss/ is ~nil~, the PKCS-1 v1.5 
+without the PSS scheme will be used. If both are ~nil~no padding will
+be used.
 
 #+BEGIN_EXAMPLE
-(sign-message rsa-private-key message :pss t) => signature
-(verify-signature rsa-public-key message signature :pss t) => boolean
+(sign-message rsa-private-key message :pkcs1 t :pss t) => signature
+(verify-signature rsa-public-key message signature :pkcs1 t :pss t) => boolean
 #+END_EXAMPLE
 
-The functions /pss-encode/ and /pss-decode/ can also be used by hand if
-necessary.
+The functions /pkcs1-encode/, /pss-encode/ and /pss-decode/ can also be 
+used by hand if necessary.
 
 *** Signature nonce
 
